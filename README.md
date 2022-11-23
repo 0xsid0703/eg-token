@@ -1,5 +1,5 @@
 # EG Token
-The heart of the EG Ecosystem. <p>
+EG is a community token making a difference by maximising crypto's impact in a purposeful ecosystem. <p>
 The EG Smart Contract accumulates a 5% fee from every Buy & a 5% fee from every Sell transaction. No Fee is collected from transfers.<p>
 The fee is then distributed to community governed wallets and used for tech development, holder rewards and our massive social impact initiatives around the world.
 
