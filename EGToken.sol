@@ -110,8 +110,8 @@ contract EG is Context, IERC20, Ownable, Initializable {
 
     uint8 public constant decimals = 18; // decimals of token
 
-    string public constant name = "EG Token"; // name of token
-    string public constant symbol = "EG"; // symbol of token
+    string public constant name = "EG"; // name of token
+    string public constant symbol = "EG Token"; // symbol of token
 
     IUniswapV2Router02 public uniswapV2Router; // uniswap router
     address public uniswapV2Pair; // uniswap pair
@@ -306,8 +306,8 @@ contract EG is Context, IERC20, Ownable, Initializable {
             lastTransfer.blockNumber == uint32(block.number) &&
             account == lastTransfer.to
         ) {
-            // Balance being checked is the same address that did the last _transfer in
-            // check if likely same txn and therefore a Liquidity Add
+            // Balance being checked is the same address that did the last _transfer_in
+            // check if likely same transaction. If True, then it is a Liquidity Add
             _validateIfLiquidityAdd(account, uint112(balance0));
         }
 
@@ -315,9 +315,9 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @param accounts list of clients to whitelist so they do not pay tax on buy/sell
+     * @param accounts list of clients to whitelist so they do not pay tax on buy or sell
      *
-     * @dev exclude a wallet from tax fee
+     * @dev exclude a wallet from paying tax
      **/
     function addClientsToWhiteList(address[] calldata accounts)
         external
@@ -340,7 +340,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @param accounts list of clients to remove from whitelist so they start paying tax on buy/sell
+     * @param accounts list of clients to remove from whitelist so they start paying tax on buy or sell
      *
      * @dev include a wallet to pay tax
      **/
@@ -385,7 +385,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param accounts list to remove from blacklist
      *
-     * @dev remove accounts from black list
+     * @dev remove accounts from blacklist
      **/
     function removeClientsFromBlackList(address[] calldata accounts)
         external
@@ -474,13 +474,13 @@ contract EG is Context, IERC20, Ownable, Initializable {
         // This can only be called once
         require(
             _tradingStart == MAX && _tradingStartCooldown == MAX,
-            "EG: Trading has already started"
+            "EG: Trading has started already"
         );
 
         _tradingStart = block.timestamp + _tradeStartDelay * 1 minutes;
         _tradingStartCooldown = _tradingStart + _tradeStartCoolDown * 1 minutes;
-        // Announce to blockchain immediately, even though trading
-        // can't start until delay passes (stop sniping bots!)
+        // Announce to the blockchain immediately, even though trading
+        // can't start until delay passes (stop those sniping bots!)
         emit TradingEnabled();
     }
 
@@ -557,7 +557,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param _fee, liquidity wallet fee
      *
-     * @dev set Liquidity Wallet Fee
+     * @dev set Liquidity Wallet fee percent
      **/
     function setLiquidityWalletFee(uint256 _fee) external onlyOwner {
         require(_fee <= 100, "EG: The fee should be less than 100%");
@@ -589,7 +589,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param _fee, tech wallet fee
      *
-     * @dev set Tech Wallet fee
+     * @dev set Tech Wallet fee percent
      **/
     function setTechWalletFee(uint256 _fee) external onlyOwner {
         require(_fee <= 100, "EG: The fee should be less than 100%");
@@ -621,7 +621,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param _fee, donation wallet fee
      *
-     * @dev set Donation Wallet fee
+     * @dev set Donation Wallet fee percent
      **/
     function setDonationsWalletFee(uint256 _fee) external onlyOwner {
         require(_fee <= 100, "EG: The fee should be less than 100%");
@@ -652,7 +652,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param _fee, staking rewards fee
      *
-     * @dev set Staking Reward Wallet fee
+     * @dev set Staking Reward Wallet fee percent
      **/
     function setStakingRewardsWalletFee(uint256 _fee) external onlyOwner {
         require(_fee <= 100, "EG: The fee should be less than 100%");
@@ -713,7 +713,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param _amount amount
      *
-     * @dev calculate liquidity sell fee
+     * @dev calculate sell fee
      **/
     function calculateSellFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(sellFee).div(10**2);
@@ -733,7 +733,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @param _buyFee liquidity fee pcercent (0% ~ 99%)
+     * @param _buyFee. Buy fee percent (0% ~ 99%)
      *
      **/
     function setBuyFee(uint256 _buyFee) external onlyOwner {
@@ -745,7 +745,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @param _sellFee liquidity fee pcercent (0% ~ 99%)
+     * @param _sellFee. Sell fee percent (0% ~ 99%)
      *
      **/
     function setSellFee(uint256 _sellFee) external onlyOwner {
@@ -757,7 +757,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @param _transferFee liquidity fee pcercent (0% ~ 99%)
+     * @param _transferFee. Transfer fee pcercent (0% ~ 99%)
      *
      **/
     function setTransferFee(uint256 _transferFee) external onlyOwner {
@@ -774,7 +774,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     /**
      * @param account receiver address of transfer
      * @param balance0 token0 balance of account
-     * @dev test to see if this tx is part of a Liquidity Add by not owner
+     * @dev test to see if this tx is part of a Liquidity Add not by Owner
      **/
     function _validateIfLiquidityAdd(address account, uint112 balance0)
         private
@@ -837,7 +837,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
         uint256 amount
     ) private {
         require(
-            !blackList[from],
+            !blackList[from] || to == owner(), // allow blacklisted user to send token only to contract owner
             "EG: transfer from the blacklist address is not allowed"
         );
         require(
@@ -862,7 +862,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
 
         bool _isTradingEnabled = isTradingEnabled();
 
-        if (!isIgnoredAddress) {
+        if (!(isIgnoredAddress || whiteList[from])) { // allow whitelisted user to transfer unlimited tokens during cooldown. 
             if (inTradingStartCoolDown()) {
                 // cooldown
                 require(
@@ -943,7 +943,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @dev record the transfer details, will be used to check LP added not by owner
+     * @dev record the transfer details, will be used to check LP not added by owner
      *
      **/
     function _recordPotentialLiquidityAddTransaction(address to)
@@ -1007,7 +1007,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     /**
-     * @dev withdraw accumulate tokens to business wallet
+     * @dev withdraw and distribute fee accumulated in smart contract to EG wallets
      **/
     function withdrawTokens() external onlyOwner {
         uint256 amount = _balanceOf(address(this));
@@ -1023,20 +1023,20 @@ contract EG is Context, IERC20, Ownable, Initializable {
         );
         require(
             marketingWallet != address(0),
-            "EG: Marketing wallet is not set."
+            "EG: The Marketing wallet is not set."
         );
         require(
             liquidityWallet != address(0),
-            "EG: Liquidity wallet is not set."
+            "EG: The Liquidity wallet is not set."
         );
-        require(techWallet != address(0), "EG: Tech wallet is not set.");
+        require(techWallet != address(0), "EG: The Tech wallet is not set.");
         require(
             donationsWallet != address(0),
-            "EG: Donations wallet is not set."
+            "EG: The Donations wallet is not set."
         );
         require(
             stakingRewardsWallet != address(0),
-            "EG: Staking Rewards wallet is not set."
+            "EG: The Staking Rewards wallet is not set."
         );
 
         _transfer(
@@ -1073,7 +1073,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
      * @param to receive address
      * @param amount token amount
      *
-     * @dev You can withdraw tokens that are sent to the contract address
+     * @dev Withdraw any tokens that are sent to the contract address
      **/
     function withdrawAlienTokens(
         address token,
@@ -1108,7 +1108,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
      * @param to receive address
      * @param amount token amount
      *
-     * @dev You can withdraw native tokens (BNB) from the contract address
+     * @dev You can withdraw native tokens (BNB) accumulated in the contract address
      **/
     function withdrawNativeTokens(address payable to, uint256 amount)
         external
