@@ -110,8 +110,8 @@ contract EG is Context, IERC20, Ownable, Initializable {
 
     uint8 public constant decimals = 18; // decimals of token
 
-    string public constant name = "EG"; // name of token
-    string public constant symbol = "EG Token"; // symbol of token
+    string public constant name = "EG Token"; // name of token
+    string public constant symbol = "EG"; // symbol of token
 
     IUniswapV2Router02 public uniswapV2Router; // uniswap router
     address public uniswapV2Pair; // uniswap pair
