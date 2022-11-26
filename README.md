@@ -26,24 +26,26 @@ The fee is then distributed to community governed wallets and used for tech deve
 20%: Staking Rewards fund</br>
 10%: Social Impact fund</br>
 
-## Revenue Distribution from HT Platform
-15%: EG Token buyback & holder rewards</br>
-15%: Social Impact fund</br>
+## Revenue Distribution 
 
-## Fees from EG Crypto Exchange on Salesforce
-100%: EG Token buyback & burn
+### From HT Platform
+* 15%: EG Token buyback & holder rewards</br>
+* 15%: Social Impact fund</br>
 
-## Revenue Distribution from Burn Party (Token Burns, Advertisements)
-100%: EG Token buyback & holder rewards
+### Fees from EG Crypto Exchange on Salesforce
+* 100%: EG Token buyback & burn
 
-## Revenue Distribution from Whitelabel EGTrade sales
-100%: EG Token buyback & holder rewards
+### Revenue Distribution from Burn Party (Token Burns, Advertisements)
+* 100%: EG Token buyback & holder rewards
 
-## Revenue Distribution from EG Blockchain Agency
-10%: EG Token buyback & holder rewards
+### Revenue Distribution from Whitelabel EGTrade sales
+* 100%: EG Token buyback & holder rewards
 
-## Revenue Distribution from EGSwap (Dex)
-0.01% of trading fees collected: EG Token buyback & burn
+### Revenue Distribution from EG Blockchain Agency
+* 10%: EG Token buyback & holder rewards
+
+### Revenue Distribution from EGSwap (Dex)
+* 0.01% of trading fees collected: EG Token buyback & burn
 
 <hr>
 
