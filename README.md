@@ -26,27 +26,35 @@ The fee is then distributed to community governed wallets and used for tech deve
 20%: Staking Rewards fund</br>
 10%: Social Impact fund</br>
 
-## Revenue Distribution 
+## Setup
 
-### From HT Platform
-* 15%: EG Token buyback & holder rewards</br>
-* 15%: Social Impact fund</br>
+Requirements:
+​
+- Node >= v12
 
-### Fees from EG Crypto Exchange on Salesforce
-* 100%: EG Token buyback & burn
+```
+$ npm install        # Install dependencies
+```
 
-### Revenue Distribution from Burn Party (Token Burns, Advertisements)
-* 100%: EG Token buyback & holder rewards
+## Compiling
+​
+To compile contract run:
+​
+```
+$ npm run compile
+```
 
-### Revenue Distribution from Whitelabel EGTrade sales
-* 100%: EG Token buyback & holder rewards
+## Testing
+​
+First, make sure Ganache is running. To run rpc, run:
 
-### Revenue Distribution from EG Blockchain Agency
-* 10%: EG Token buyback & holder rewards
+```
+$ npm run rpc
+```
+Before running this command please set your infura project id into the script 'rpc' in package.json file.​
 
-### Revenue Distribution from EGSwap (Dex)
-* 0.01% of trading fees collected: EG Token buyback & burn
-
-<hr>
-
-"Holder Rewards" can be token staking rewards, Gator Gang staking rewards, or manual token burns.
+Run all tests:
+​
+```
+$ npm run test
+```
