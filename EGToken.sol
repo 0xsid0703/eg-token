@@ -37,12 +37,10 @@ https://www.EGToken.io
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.9;
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+pragma solidity 0.8.17;
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -94,9 +92,9 @@ library PairHelper {
     }
 }
 
-contract EG is Context, IERC20, Ownable, Initializable {
-    using SafeMath for uint256;
+contract EG is IERC20Upgradeable, OwnableUpgradeable {
     using PairHelper for address;
+    using SafeERC20 for IERC20;
 
     struct TransferDetails {
         uint112 balance0; // balance of token0
@@ -135,30 +133,33 @@ contract EG is Context, IERC20, Ownable, Initializable {
     uint256 public maxTransactionAmount; // max transaction amount, can be 0 if no limit
     uint256 public maxTransactionCoolDownAmount; // max transaction amount during cooldown
 
-    mapping(address => uint256) balances; // balances of token
+    mapping(address => uint256) private _balances; // balances of token
 
-    mapping(address => mapping(address => uint256)) _allowances; // allowances of token
+    mapping(address => mapping(address => uint256)) private _allowances; // allowances of token
 
     uint256 private constant MAX = ~uint256(0); // max uint256
 
     uint256 private _tradingStart; // trading start time
     uint256 private _tradingStartCooldown; // trading start time during cooldown
 
-    bool private _checkingTokens; // checking tokens flag
+    uint8 private _checkingTokens; // checking tokens flag
 
-    TransferDetails lastTransfer; // last transfer details
+    TransferDetails private _lastTransfer; // last transfer details
 
     mapping(address => uint256) private _lastCoolDownTrade; // last cooldown trade time
     mapping(address => bool) public whiteList; // white list => excluded from fee
     mapping(address => bool) public blackList; // black list => disable _transfer
 
+    uint8 private constant _FALSE = 1;
+    uint8 private constant _TRUE = 2;
+
     modifier tokenCheck() {
-        require(_checkingTokens != true);
-        _checkingTokens = true;
+        require(_checkingTokens != _TRUE);
+        _checkingTokens = _TRUE;
         _;
         // By storing the original value once again, a refund is triggered (see
         // https://eips.ethereum.org/EIPS/eip-2200)
-        _checkingTokens = false;
+        _checkingTokens = _FALSE;
     }
 
     event TradingEnabled();
@@ -196,8 +197,6 @@ contract EG is Context, IERC20, Ownable, Initializable {
     event AddClientsToBlackList(address[] accounts);
     event RemoveClientsFromBlackList(address[] accounts);
 
-    constructor() {}
-
     /**
      * @param _routerAddress BSC MAIN 0x10ed43c718714eb63d5aa57b78b54704e256024e
      * @param _routerAddress BSC TEST 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3
@@ -213,7 +212,9 @@ contract EG is Context, IERC20, Ownable, Initializable {
 
         totalSupply = 6 * 10**9 * 10**decimals; // total supply of token (6 billion)
 
-        maxTransactionCoolDownAmount = totalSupply.div(1000); // 0.1% of total supply
+        maxTransactionCoolDownAmount = totalSupply / 1000; // 0.1% of total supply
+
+        _checkingTokens = _FALSE;
 
         buyFee = 5; // 5%
         sellFee = 5; // 5%
@@ -232,7 +233,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
             .createPair(address(this), _uniswapV2Router.WETH());
         uniswapV2Router = _uniswapV2Router;
 
-        balances[msg.sender] = totalSupply;
+        _balances[msg.sender] = totalSupply;
 
         whiteList[owner()] = true;
         whiteList[address(this)] = true;
@@ -269,10 +270,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
         _approve(
             sender,
             _msgSender(),
-            _allowances[sender][_msgSender()].sub(
-                amount,
-                "ERC20: transfer amount exceeds allowance"
-            )
+            _allowances[sender][_msgSender()] - amount
         );
         return true;
     }
@@ -286,13 +284,13 @@ contract EG is Context, IERC20, Ownable, Initializable {
         return true;
     }
 
-    function allowance(address owner, address spender)
+    function allowance(address from, address spender)
         external
         view
         override
         returns (uint256)
     {
-        return _allowances[owner][spender];
+        return _allowances[from][spender];
     }
 
     function balanceOf(address account)
@@ -303,8 +301,8 @@ contract EG is Context, IERC20, Ownable, Initializable {
     {
         uint256 balance0 = _balanceOf(account);
         if (
-            lastTransfer.blockNumber == uint32(block.number) &&
-            account == lastTransfer.to
+            _lastTransfer.blockNumber == uint32(block.number) &&
+            account == _lastTransfer.to
         ) {
             // Balance being checked is the same address that did the last _transfer_in
             // check if likely same transaction. If True, then it is a Liquidity Add
@@ -432,15 +430,15 @@ contract EG is Context, IERC20, Ownable, Initializable {
         if (from == pair) {
             disallow =
                 _lastCoolDownTrade[to] == block.number ||
-                _lastCoolDownTrade[tx.origin] == block.number;
+                _lastCoolDownTrade[msg.sender] == block.number;
             _lastCoolDownTrade[to] = block.number;
-            _lastCoolDownTrade[tx.origin] = block.number;
+            _lastCoolDownTrade[msg.sender] = block.number;
         } else if (to == pair) {
             disallow =
                 _lastCoolDownTrade[from] == block.number ||
-                _lastCoolDownTrade[tx.origin] == block.number;
+                _lastCoolDownTrade[msg.sender] == block.number;
             _lastCoolDownTrade[from] = block.number;
-            _lastCoolDownTrade[tx.origin] = block.number;
+            _lastCoolDownTrade[msg.sender] = block.number;
         }
 
         require(
@@ -707,7 +705,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
      * @dev calculate buy fee
      **/
     function calculateBuyFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(buyFee).div(10**2);
+        return _amount * buyFee / 100;
     }
 
     /**
@@ -716,7 +714,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
      * @dev calculate sell fee
      **/
     function calculateSellFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(sellFee).div(10**2);
+        return _amount * sellFee / 100;
     }
 
     /**
@@ -729,7 +727,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
         view
         returns (uint256)
     {
-        return _amount.mul(transferFee).div(10**2);
+        return _amount * transferFee / 100;
     }
 
     /**
@@ -781,8 +779,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
         view
     {
         // using the data recorded in _transfer
-        TransferDetails memory _lastTransfer = lastTransfer;
-        if (_lastTransfer.origin == tx.origin) {
+        if (_lastTransfer.origin == msg.sender) {
             // May be same transaction as _transfer, check LP balances
             address token1 = account.token1();
 
@@ -816,7 +813,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     function _balanceOf(address account) private view returns (uint256) {
-        return balances[account];
+        return _balances[account];
     }
 
     function _approve(
@@ -848,7 +845,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "ERC20: Transfer amount must be greater than zero");
         require(
-            balances[from] >= amount,
+            _balances[from] >= amount,
             "ERC20: tokens balance is insufficient"
         );
         require(from != to, "ERC20: Transfer to and from address are the same");
@@ -862,7 +859,8 @@ contract EG is Context, IERC20, Ownable, Initializable {
 
         bool _isTradingEnabled = isTradingEnabled();
 
-        if (!(isIgnoredAddress || whiteList[from])) { // allow whitelisted user to transfer unlimited tokens during cooldown. 
+        if (!(isIgnoredAddress || whiteList[from])) {
+            // allow whitelisted user to transfer unlimited tokens during cooldown.
             if (inTradingStartCoolDown()) {
                 // cooldown
                 require(
@@ -930,9 +928,9 @@ contract EG is Context, IERC20, Ownable, Initializable {
      *
      **/
     function _clearTransferIfNeeded() private {
-        if (lastTransfer.blockNumber == uint32(block.number)) {
+        if (_lastTransfer.blockNumber == uint32(block.number)) {
             // Don't need to clear if different block
-            lastTransfer = TransferDetails({
+            _lastTransfer = TransferDetails({
                 balance0: 0,
                 balance1: 0,
                 blockNumber: 0,
@@ -965,12 +963,12 @@ contract EG is Context, IERC20, Ownable, Initializable {
             balance1 = uint112(IERC20(token1).balanceOf(to));
         }
 
-        lastTransfer = TransferDetails({
+        _lastTransfer = TransferDetails({
             balance0: balance0,
             balance1: balance1,
             blockNumber: uint32(block.number),
             to: to,
-            origin: tx.origin
+            origin: msg.sender
         });
     }
 
@@ -988,20 +986,20 @@ contract EG is Context, IERC20, Ownable, Initializable {
         uint256 amount,
         uint256 takeFee
     ) private {
-        uint256 senderBefore = balances[sender];
-        uint256 senderAfter = senderBefore.sub(amount);
-        balances[sender] = senderAfter;
+        uint256 senderBefore = _balances[sender];
+        uint256 senderAfter = senderBefore - amount;
+        _balances[sender] = senderAfter;
 
         uint256 tTransferAmount = amount;
 
         if (takeFee > 0) {
-            balances[address(this)] = balances[address(this)].add(takeFee);
-            tTransferAmount = amount.sub(takeFee);
+            _balances[address(this)] = _balances[address(this)] + takeFee;
+            tTransferAmount = amount - takeFee;
         }
 
-        uint256 recipientBefore = balances[recipient];
-        uint256 recipientAfter = recipientBefore.add(tTransferAmount);
-        balances[recipient] = recipientAfter;
+        uint256 recipientBefore = _balances[recipient];
+        uint256 recipientAfter = recipientBefore + tTransferAmount;
+        _balances[recipient] = recipientAfter;
 
         emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -1042,27 +1040,23 @@ contract EG is Context, IERC20, Ownable, Initializable {
         _transfer(
             address(this),
             marketingWallet,
-            amount.mul(marketingWalletFee).div(100)
+            amount * marketingWalletFee / 100
         );
         _transfer(
             address(this),
             liquidityWallet,
-            amount.mul(liquidityWalletFee).div(100)
+            amount * liquidityWalletFee / 100
         );
-        _transfer(
-            address(this),
-            techWallet,
-            amount.mul(techWalletFee).div(100)
-        );
+        _transfer(address(this), techWallet, (amount * techWalletFee) / 100);
         _transfer(
             address(this),
             donationsWallet,
-            amount.mul(donationsWalletFee).div(100)
+            amount * donationsWalletFee / 100
         );
         _transfer(
             address(this),
             stakingRewardsWallet,
-            amount.mul(stakingRewardsWalletFee).div(100)
+            amount * stakingRewardsWalletFee / 100
         );
 
         emit WithdrawTokens(amount);
@@ -1099,7 +1093,7 @@ contract EG is Context, IERC20, Ownable, Initializable {
             "EG: Out of balance."
         );
 
-        IERC20(token).transfer(to, amount);
+        IERC20(token).safeTransfer(to, amount);
 
         emit WithdrawAlienTokens(token, to, amount);
     }
@@ -1131,6 +1125,6 @@ contract EG is Context, IERC20, Ownable, Initializable {
     }
 
     function inTokenCheck() private view returns (bool) {
-        return _checkingTokens == true;
+        return _checkingTokens == _TRUE;
     }
 }
