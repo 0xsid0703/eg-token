@@ -40,7 +40,7 @@ https://www.EGToken.io
 pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -94,7 +94,6 @@ library PairHelper {
 
 contract EG is IERC20Upgradeable, OwnableUpgradeable {
     using PairHelper for address;
-    using SafeERC20 for IERC20;
 
     struct TransferDetails {
         uint112 balance0; // balance of token0
@@ -201,11 +200,13 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
      * @param _routerAddress BSC MAIN 0x10ed43c718714eb63d5aa57b78b54704e256024e
      * @param _routerAddress BSC TEST 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3
      **/
-    function initialize(address _routerAddress) external initializer onlyOwner {
+    function initialize(address _routerAddress) external initializer {
         require(
             _routerAddress != address(0),
             "EG: routerAddress should not be the zero address"
         );
+
+        __Ownable_init();
 
         _tradingStart = MAX; // trading start time
         _tradingStartCooldown = MAX; // trading start time during cooldown
@@ -705,7 +706,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
      * @dev calculate buy fee
      **/
     function calculateBuyFee(uint256 _amount) private view returns (uint256) {
-        return _amount * buyFee / 100;
+        return (_amount * buyFee) / 100;
     }
 
     /**
@@ -714,7 +715,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
      * @dev calculate sell fee
      **/
     function calculateSellFee(uint256 _amount) private view returns (uint256) {
-        return _amount * sellFee / 100;
+        return (_amount * sellFee) / 100;
     }
 
     /**
@@ -727,7 +728,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
         view
         returns (uint256)
     {
-        return _amount * transferFee / 100;
+        return (_amount * transferFee) / 100;
     }
 
     /**
@@ -1040,23 +1041,23 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
         _transfer(
             address(this),
             marketingWallet,
-            amount * marketingWalletFee / 100
+            (amount * marketingWalletFee) / 100
         );
         _transfer(
             address(this),
             liquidityWallet,
-            amount * liquidityWalletFee / 100
+            (amount * liquidityWalletFee) / 100
         );
         _transfer(address(this), techWallet, (amount * techWalletFee) / 100);
         _transfer(
             address(this),
             donationsWallet,
-            amount * donationsWalletFee / 100
+            (amount * donationsWalletFee) / 100
         );
         _transfer(
             address(this),
             stakingRewardsWallet,
-            amount * stakingRewardsWalletFee / 100
+            (amount * stakingRewardsWalletFee) / 100
         );
 
         emit WithdrawTokens(amount);
@@ -1093,7 +1094,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
             "EG: Out of balance."
         );
 
-        IERC20(token).safeTransfer(to, amount);
+        IERC20(token).transfer(to, amount);
 
         emit WithdrawAlienTokens(token, to, amount);
     }
