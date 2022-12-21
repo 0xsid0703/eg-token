@@ -428,15 +428,15 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
         if (from == pair) {
             disallow =
                 _lastCoolDownTrade[to] == block.number ||
-                _lastCoolDownTrade[msg.sender] == block.number;
+                _lastCoolDownTrade[tx.origin] == block.number;
             _lastCoolDownTrade[to] = block.number;
-            _lastCoolDownTrade[msg.sender] = block.number;
+            _lastCoolDownTrade[tx.origin] = block.number;
         } else if (to == pair) {
             disallow =
                 _lastCoolDownTrade[from] == block.number ||
-                _lastCoolDownTrade[msg.sender] == block.number;
+                _lastCoolDownTrade[tx.origin] == block.number;
             _lastCoolDownTrade[from] = block.number;
-            _lastCoolDownTrade[msg.sender] = block.number;
+            _lastCoolDownTrade[tx.origin] = block.number;
         }
 
         require(
@@ -777,7 +777,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
         view
     {
         // using the data recorded in _transfer
-        if (_lastTransfer.origin == msg.sender) {
+        if (_lastTransfer.origin == tx.origin) {
             // May be same transaction as _transfer, check LP balances
             address token1 = account.token1();
 
@@ -966,7 +966,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
             balance1: balance1,
             blockNumber: uint32(block.number),
             to: to,
-            origin: msg.sender
+            origin: tx.origin
         });
     }
 
