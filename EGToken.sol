@@ -40,6 +40,7 @@ https://www.EGToken.io
 pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
@@ -94,6 +95,7 @@ library PairHelper {
 
 contract EG is IERC20Upgradeable, OwnableUpgradeable {
     using PairHelper for address;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct TransferDetails {
         uint112 balance0; // balance of token0
@@ -141,7 +143,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
     uint256 private _tradingStart; // trading start time
     uint256 private _tradingStartCooldown; // trading start time during cooldown
 
-    uint8 private _checkingTokens; // checking tokens flag
+    bool private _checkingTokens; // checking tokens flag
 
     TransferDetails private _lastTransfer; // last transfer details
 
@@ -149,16 +151,13 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
     mapping(address => bool) public whiteList; // white list => excluded from fee
     mapping(address => bool) public blackList; // black list => disable _transfer
 
-    uint8 private constant _FALSE = 1;
-    uint8 private constant _TRUE = 2;
-
     modifier tokenCheck() {
-        require(_checkingTokens != _TRUE);
-        _checkingTokens = _TRUE;
+        require(!_checkingTokens);
+        _checkingTokens = true;
         _;
         // By storing the original value once again, a refund is triggered (see
         // https://eips.ethereum.org/EIPS/eip-2200)
-        _checkingTokens = _FALSE;
+        _checkingTokens = false;
     }
 
     event TradingEnabled();
@@ -214,8 +213,6 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
         totalSupply = 6 * 10**9 * 10**decimals; // total supply of token (6 billion)
 
         maxTransactionCoolDownAmount = totalSupply / 1000; // 0.1% of total supply
-
-        _checkingTokens = _FALSE;
 
         buyFee = 5; // 5%
         sellFee = 5; // 5%
@@ -1094,7 +1091,7 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
             "EG: Out of balance."
         );
 
-        IERC20(token).transfer(to, amount);
+        IERC20Upgradeable(token).safeTransfer(to, amount);
 
         emit WithdrawAlienTokens(token, to, amount);
     }
@@ -1126,6 +1123,6 @@ contract EG is IERC20Upgradeable, OwnableUpgradeable {
     }
 
     function inTokenCheck() private view returns (bool) {
-        return _checkingTokens == _TRUE;
+        return _checkingTokens;
     }
 }
